@@ -1,6 +1,6 @@
 module github.com/rubemlrm/go-shelly
 
-go 1.21.3
+go 1.21
 
 require (
 	github.com/go-faker/faker/v4 v4.4.0
