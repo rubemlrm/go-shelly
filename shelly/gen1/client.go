@@ -1,4 +1,4 @@
-package client
+package gen1
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"slices"
 	"time"
 
 	"github.com/hashicorp/go-cleanhttp"
@@ -15,14 +16,19 @@ import (
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
 )
 
+type ClientProxy interface {
+	Do(req *retryablehttp.Request) (*http.Response, error)
+}
+
 // Client act's as the entry object for sdk
 type Client struct {
-	BaseURL     *url.URL
-	client      *retryablehttp.Client
-	common      service
-	username    string
-	password    string
-	requireAuth bool
+	BaseURL       *url.URL
+	client        ClientProxy
+	common        service
+	username      string
+	password      string
+	requireAuth   bool
+	ShellyService *ShellyService
 }
 
 type service struct {
@@ -39,6 +45,7 @@ func NewClient(hostname string) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return client, nil
 }
 
@@ -71,6 +78,8 @@ func newClient(hostname string) (*Client, error) {
 		RetryMax:     5,
 		CheckRetry:   c.retryHTTPCheck,
 	}
+
+	c.ShellyService = &ShellyService{client: c}
 	return c, nil
 }
 
@@ -87,23 +96,30 @@ func (c *Client) retryHTTPCheck(ctx context.Context, resp *http.Response, err er
 	return false, nil
 }
 
-func (c *Client) NewRequest(method, endpoint string, parseResponse interface{}) (*retryablehttp.Request, error) {
+func (c *Client) NewRequest(method, endpoint string) (*retryablehttp.Request, error) {
 	composedURL := fmt.Sprintf("%v%v", c.BaseURL, endpoint)
 	reqHeaders := make(http.Header)
 	reqHeaders.Set("Accept", "application/json")
+	jsonMethodsList := []string{
+		http.MethodPatch,
+		http.MethodPost,
+		http.MethodPut,
+	}
 
-	if method == http.MethodPatch || method == http.MethodPost || method == http.MethodPut {
+	if slices.Contains(jsonMethodsList, method) {
 		reqHeaders.Set("Content-Type", "application/json")
 	}
 
 	request, err := retryablehttp.NewRequest(method, composedURL, nil)
-	if c.username != "" {
-		request.SetBasicAuth(c.username, c.password)
-	}
 	if err != nil {
 		return nil, err
 	}
-
+	if c.username != "" {
+		request.SetBasicAuth(c.username, c.password)
+	}
+	for k, v := range reqHeaders {
+		request.Header[k] = v
+	}
 	return request, nil
 }
 
@@ -124,13 +140,17 @@ func (c *Client) Do(req *retryablehttp.Request, v interface{}) (*Response, error
 	if err != nil {
 		return nil, err
 	}
-	if resp.StatusCode == 500 {
-		return nil, errors.New("Server error")
+	if resp.StatusCode == http.StatusInternalServerError {
+		return nil, errors.New("server error")
+	}
+
+	if resp.StatusCode == http.StatusUnauthorized {
+		return nil, errors.New("unauthorized to access this resource")
 	}
 
 	defer resp.Body.Close()
 	defer io.Copy(io.Discard, resp.Body)
-	_ = &Response{Response: resp}
+	parsedResponse := &Response{Response: resp}
 	err = json.NewDecoder(resp.Body).Decode(v)
 	if err == io.EOF {
 		err = nil
@@ -139,5 +159,5 @@ func (c *Client) Do(req *retryablehttp.Request, v interface{}) (*Response, error
 		return nil, err
 	}
 
-	return nil, nil
+	return parsedResponse, nil
 }
