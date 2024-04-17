@@ -1,5 +1,7 @@
 # Shelly Go Client
 
+[![codecov](https://codecov.io/github/rubemlrm/go-shelly/graph/badge.svg?token=KMFD7E3XGG)](https://codecov.io/github/rubemlrm/go-shelly)
+
 The main objective for this project is to provide a native go client that supports Gen1 and Gen2 plus.
 
 
