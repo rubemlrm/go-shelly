@@ -1,0 +1,9 @@
+with-expecter: True
+packages:
+  github.com/rubemlrm/go-shelly/shelly:
+    config:
+      all: True
+      filename: "mock_{{.InterfaceName}}.go"
+      dir: "{{.InterfaceDir}}/mocks/"
+      mockname: "Mock{{.InterfaceName}}"
+      outpkg: "{{.PackageName}}_mocks"
