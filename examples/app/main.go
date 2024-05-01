@@ -4,11 +4,17 @@ import (
 	"fmt"
 	"os"
 
-	shelly "github.com/rubemlrm/go-shelly/shelly/gen1"
+	gen1 "github.com/rubemlrm/go-shelly/shelly/gen1"
+	transport "github.com/rubemlrm/go-shelly/shelly/gen1/transport"
 )
 
 func main() {
-	client, err := shelly.NewBasicAuthClient(os.Getenv("HOST"), os.Getenv("USERNAME"), os.Getenv("PASSWORD"), true)
+	opts := transport.ClientOptions{
+		Hostname: os.Getenv("HOST"),
+		Username: os.Getenv("USERNAME"),
+		Password: os.Getenv("PASSWORD"),
+	}
+	client, err := gen1.NewRestClientWithAuth(opts)
 	if err != nil {
 		panic(err)
 	}

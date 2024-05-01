@@ -1,9 +1,11 @@
-package gen1
+package devices
 
 import (
 	"fmt"
 	"net/http"
 	"time"
+
+	contracts "github.com/rubemlrm/go-shelly/shelly/gen1/contracts"
 )
 
 type BaseShellyResponse struct {
@@ -141,7 +143,13 @@ type BaseWifiScanResults struct {
 }
 
 type ShellyService struct {
-	client *Client
+	client contracts.ShellyClient
+}
+
+func NewShellyService(client contracts.ShellyClient) *ShellyService {
+	return &ShellyService{
+		client: client,
+	}
 }
 
 func (s *ShellyService) GetShelly() (*BaseShellyResponse, error) {

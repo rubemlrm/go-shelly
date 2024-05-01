@@ -1,4 +1,4 @@
-package gen1
+package transport
 
 import (
 	"bytes"
@@ -7,13 +7,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/rubemlrm/go-shelly/shelly/gen1/mocks"
+	"github.com/rubemlrm/go-shelly/shelly/gen1/transport/mocks"
 	"github.com/stretchr/testify/mock"
 
 	"github.com/go-faker/faker/v4"
@@ -42,99 +41,78 @@ func (m *MockContext) Err() error {
 	return m.err
 }
 
-func setup(t *testing.T) (*http.ServeMux, *Client) {
-	// mux is the HTTP request multiplexer used with the test server.
-	mux := http.NewServeMux()
-
-	// server is a test HTTP server used to provide mock API responses.
-	server := httptest.NewServer(mux)
-	t.Cleanup(server.Close)
-
-	// client is the client being tested.
-	client, err := NewClient(server.URL)
-	if err != nil {
-		t.Fatalf("Failed to create client: %v", err)
-	}
-
-	return mux, client
-}
-
 func TestNewClient(t *testing.T) {
 	type test struct {
 		title     string
 		wantError bool
-		input     string
+		input     ClientOptions
 	}
 
 	tests := []test{
 		{
 			title:     "Fail on wrong hostname",
 			wantError: true,
-			input:     "tes-12%wq+2",
+			input: ClientOptions{
+				Hostname: "tes-12%wq+2",
+			},
 		},
 		{
 			title:     "Success with correct hostname",
 			wantError: false,
-			input:     "localhost",
+			input: ClientOptions{
+				Hostname: "localhost",
+			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.title, func(t *testing.T) {
-			c, err := NewClient(tc.input)
+			c, err := NewRestClient(tc.input)
 			if tc.wantError {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tc.input, c.BaseURL.String())
+				assert.Equal(t, tc.input.Hostname, c.baseURL.String())
 			}
 		})
 	}
 }
 
 func TestNewBasicAuthClient(t *testing.T) {
-	type config struct {
-		username    string
-		password    string
-		hostname    string
-		requireAuth bool
-	}
 	type test struct {
 		title     string
 		wantError bool
-		input     config
+		input     ClientOptions
 	}
 	tests := []test{
 		{
 			title:     "fail on wrong hostname",
 			wantError: true,
-			input: config{
-				username:    "",
-				password:    "",
-				hostname:    "tes-12%wq+2",
-				requireAuth: true,
+			input: ClientOptions{
+				Username: "",
+				Password: "",
+				Hostname: "tes-12%wq+2",
 			},
 		},
 		{
 			title:     "Valid hostname and user configuration",
 			wantError: false,
-			input: config{
-				username:    faker.Username(),
-				password:    faker.Password(),
-				hostname:    faker.URL(),
-				requireAuth: true,
+			input: ClientOptions{
+				Username: faker.Username(),
+				Password: faker.Password(),
+				Hostname: faker.URL(),
 			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.title, func(t *testing.T) {
-			c, err := NewBasicAuthClient(tc.input.hostname, tc.input.username, tc.input.password, tc.input.requireAuth)
+			c, err := NewRestBasicAuthClient(tc.input)
 			if tc.wantError {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tc.input.hostname, c.BaseURL.String())
+				assert.Equal(t, tc.input.Hostname, c.baseURL.String())
 			}
 		})
 	}
@@ -219,7 +197,7 @@ func TestRetryHTTPCheck(t *testing.T) {
 			if tc.wantContextError {
 				mockCTX.err = tc.contextError
 			}
-			flag, err := tc.input.retryHTTPCheck(mockCTX, tc.httpResponse, tc.errorMessage)
+			flag, err := tc.input.RetryHTTPCheck(mockCTX, tc.httpResponse, tc.errorMessage)
 			if tc.wantError {
 				assert.NotNil(t, err)
 				if tc.wantContextError {
@@ -260,7 +238,7 @@ func TestNewRequest(t *testing.T) {
 				username: "",
 				password: faker.Password(),
 				client:   &retryablehttp.Client{},
-				BaseURL:  url,
+				baseURL:  url,
 			},
 			wantError: false,
 			error:     nil,
@@ -271,11 +249,11 @@ func TestNewRequest(t *testing.T) {
 			method:   http.MethodPost,
 			endpoint: "/random",
 			client: &Client{
-				username:    faker.Username(),
-				password:    faker.Password(),
-				client:      &retryablehttp.Client{},
-				BaseURL:     url,
-				requireAuth: true,
+				username:     faker.Username(),
+				password:     faker.Password(),
+				client:       &retryablehttp.Client{},
+				baseURL:      url,
+				requiresAuth: true,
 			},
 			wantError: false,
 			error:     nil,
@@ -289,7 +267,22 @@ func TestNewRequest(t *testing.T) {
 				username: "",
 				password: faker.Password(),
 				client:   &retryablehttp.Client{},
-				BaseURL:  url,
+				baseURL:  url,
+			},
+			wantError: false,
+			error:     nil,
+			hasAuth:   false,
+			opts:      &Opts{"testing"},
+		},
+		{
+			title:    "Fail because of url parsing",
+			method:   http.MethodGet,
+			endpoint: "/random",
+			client: &Client{
+				username: "",
+				password: faker.Password(),
+				client:   &retryablehttp.Client{},
+				baseURL:  url,
 			},
 			wantError: false,
 			error:     nil,
@@ -381,7 +374,7 @@ func TestDo(t *testing.T) {
 		wantError        bool
 		errorMessage     error
 		httpResponse     *http.Response
-		wantResponse     Response
+		wantResponse     *http.Response
 		mockClientReturn mockClientReturn
 	}
 	type resp struct {

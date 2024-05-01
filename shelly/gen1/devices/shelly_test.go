@@ -1,13 +1,35 @@
-package gen1
+package devices
 
 import (
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
 
+	"github.com/rubemlrm/go-shelly/shelly/gen1/contracts/mocks"
+	transport "github.com/rubemlrm/go-shelly/shelly/gen1/transport"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
+
+func SetupRestClient(t *testing.T) (*http.ServeMux, *transport.Client) {
+	// mux is the HTTP request multiplexer used with the test server.
+	mux := http.NewServeMux()
+
+	// server is a test HTTP server used to provide mock API responses.
+	server := httptest.NewServer(mux)
+	t.Cleanup(server.Close)
+
+	// client is the client being tested.
+
+	client, err := transport.NewRestClient(transport.ClientOptions{Hostname: server.URL})
+	if err != nil {
+		t.Fatalf("Failed to create client: %v", err)
+	}
+
+	return mux, client
+}
 
 func TestGetShelly(t *testing.T) {
 	type test struct {
@@ -43,16 +65,26 @@ func TestGetShelly(t *testing.T) {
 			wantClientError: false,
 			fixture:         "get_shelly_error.json",
 		},
+		{
+			title:           "Testing Shelly response with error",
+			want:            &BaseShellyResponse{},
+			error:           nil,
+			wantError:       true,
+			wantClientError: false,
+			fixture:         "get_shelly_error.json",
+		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.title, func(t *testing.T) {
-			mux, client := setup(t)
+			mux, client := SetupRestClient(t)
 			mux.HandleFunc("/shelly", func(w http.ResponseWriter, r *http.Request) {
 				assert.Equal(t, "GET", r.Method)
 				fmt.Fprint(w, fixture(tc.fixture))
 			})
-			resp, err := client.ShellyService.GetShelly()
+
+			cl := NewShellyService(client)
+			resp, err := cl.GetShelly()
 			if tc.wantError {
 				assert.Error(t, err)
 				assert.Nil(t, resp)
@@ -64,11 +96,20 @@ func TestGetShelly(t *testing.T) {
 	}
 }
 
+func TestNewRequestFailure(t *testing.T) {
+	client := mocks.NewShellyClient(t)
+	client.On("NewRequest", mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("testing"))
+	cl := NewShellyService(client)
+	_, err := cl.GetShelly()
+	assert.Error(t, err)
+
+}
+
 func TestGetSettings(t *testing.T) {
 	type test struct {
 		title     string
 		want      *BaseSettingsResponse
-		client    *Client
+		client    *transport.Client
 		error     error
 		wantError bool
 		fixture   string
@@ -80,7 +121,7 @@ func TestGetSettings(t *testing.T) {
 			want: &BaseSettingsResponse{
 				PinCode: "123456",
 			},
-			client:    &Client{},
+			client:    &transport.Client{},
 			error:     nil,
 			wantError: false,
 			fixture:   "get_settings.json",
@@ -88,7 +129,7 @@ func TestGetSettings(t *testing.T) {
 		{
 			title:     "Testing Shelly response with error",
 			want:      &BaseSettingsResponse{},
-			client:    &Client{},
+			client:    &transport.Client{},
 			error:     nil,
 			wantError: true,
 			fixture:   "get_settings_error.json",
@@ -97,12 +138,13 @@ func TestGetSettings(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.title, func(t *testing.T) {
-			mux, client := setup(t)
+			mux, client := SetupRestClient(t)
+			cl := NewShellyService(client)
 			mux.HandleFunc("/settings", func(w http.ResponseWriter, r *http.Request) {
 				assert.Equal(t, "GET", r.Method)
 				fmt.Fprint(w, fixture(tc.fixture))
 			})
-			resp, err := client.ShellyService.GetSettings()
+			resp, err := cl.GetSettings()
 			if tc.wantError {
 				assert.Error(t, err)
 				assert.Nil(t, resp)
@@ -114,11 +156,20 @@ func TestGetSettings(t *testing.T) {
 	}
 }
 
+func TestGetSettingsNewRequestFailure(t *testing.T) {
+	client := mocks.NewShellyClient(t)
+	client.On("NewRequest", mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("testing"))
+	cl := NewShellyService(client)
+	_, err := cl.GetSettings()
+	assert.Error(t, err)
+
+}
+
 func TestGetOta(t *testing.T) {
 	type test struct {
 		title     string
 		want      *BaseOtaResponse
-		client    *Client
+		client    *transport.Client
 		error     error
 		wantError bool
 		fixture   string
@@ -133,7 +184,7 @@ func TestGetOta(t *testing.T) {
 				NewVersion: "2",
 				OldVersion: "1",
 			},
-			client:    &Client{},
+			client:    &transport.Client{},
 			error:     nil,
 			wantError: false,
 			fixture:   "get_ota.json",
@@ -141,7 +192,7 @@ func TestGetOta(t *testing.T) {
 		{
 			title:     "Testing Shelly response with error",
 			want:      &BaseOtaResponse{},
-			client:    &Client{},
+			client:    &transport.Client{},
 			error:     nil,
 			wantError: true,
 			fixture:   "get_ota_error.json",
@@ -150,12 +201,13 @@ func TestGetOta(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.title, func(t *testing.T) {
-			mux, client := setup(t)
+			mux, client := SetupRestClient(t)
+			cl := NewShellyService(client)
 			mux.HandleFunc("/ota", func(w http.ResponseWriter, r *http.Request) {
 				assert.Equal(t, "GET", r.Method)
 				fmt.Fprint(w, fixture(tc.fixture))
 			})
-			resp, err := client.ShellyService.GetOta()
+			resp, err := cl.GetOta()
 			if tc.wantError {
 				assert.Error(t, err)
 				assert.Nil(t, resp)
@@ -167,11 +219,19 @@ func TestGetOta(t *testing.T) {
 	}
 }
 
+func TestGetOtaNewRequestFailure(t *testing.T) {
+	client := mocks.NewShellyClient(t)
+	client.On("NewRequest", mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("testing"))
+	cl := NewShellyService(client)
+	_, err := cl.GetOta()
+	assert.Error(t, err)
+}
+
 func TestGetOtaCheck(t *testing.T) {
 	type test struct {
 		title     string
 		want      *BaseOtaCheck
-		client    *Client
+		client    *transport.Client
 		error     error
 		wantError bool
 		fixture   string
@@ -183,7 +243,7 @@ func TestGetOtaCheck(t *testing.T) {
 			want: &BaseOtaCheck{
 				Status: "ok",
 			},
-			client:    &Client{},
+			client:    &transport.Client{},
 			error:     nil,
 			wantError: false,
 			fixture:   "get_ota_check.json",
@@ -191,7 +251,7 @@ func TestGetOtaCheck(t *testing.T) {
 		{
 			title:     "Testing Shelly response with error",
 			want:      &BaseOtaCheck{},
-			client:    &Client{},
+			client:    &transport.Client{},
 			error:     nil,
 			wantError: true,
 			fixture:   "get_ota_check_error.json",
@@ -200,12 +260,13 @@ func TestGetOtaCheck(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.title, func(t *testing.T) {
-			mux, client := setup(t)
+			mux, client := SetupRestClient(t)
+			cl := NewShellyService(client)
 			mux.HandleFunc("/ota/check", func(w http.ResponseWriter, r *http.Request) {
 				assert.Equal(t, "GET", r.Method)
 				fmt.Fprint(w, fixture(tc.fixture))
 			})
-			resp, err := client.ShellyService.GetOtaCheck()
+			resp, err := cl.GetOtaCheck()
 			if tc.wantError {
 				assert.Error(t, err)
 				assert.Nil(t, resp)
@@ -217,11 +278,19 @@ func TestGetOtaCheck(t *testing.T) {
 	}
 }
 
+func TestGetOtaCheckNewRequestFailure(t *testing.T) {
+	client := mocks.NewShellyClient(t)
+	client.On("NewRequest", mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("testing"))
+	cl := NewShellyService(client)
+	_, err := cl.GetOtaCheck()
+	assert.Error(t, err)
+}
+
 func TestGetWifiScan(t *testing.T) {
 	type test struct {
 		title     string
 		want      *BaseWifiScan
-		client    *Client
+		client    *transport.Client
 		error     error
 		wantError bool
 		fixture   string
@@ -234,7 +303,7 @@ func TestGetWifiScan(t *testing.T) {
 				Wifiscan: "done",
 				Results:  []BaseWifiScanResults{},
 			},
-			client:    &Client{},
+			client:    &transport.Client{},
 			error:     nil,
 			wantError: false,
 			fixture:   "get_wifiscan.json",
@@ -242,7 +311,7 @@ func TestGetWifiScan(t *testing.T) {
 		{
 			title:     "Testing Shelly response with error",
 			want:      &BaseWifiScan{},
-			client:    &Client{},
+			client:    &transport.Client{},
 			error:     nil,
 			wantError: true,
 			fixture:   "get_wifiscan_error.json",
@@ -251,12 +320,13 @@ func TestGetWifiScan(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.title, func(t *testing.T) {
-			mux, client := setup(t)
+			mux, client := SetupRestClient(t)
+			cl := NewShellyService(client)
 			mux.HandleFunc("/wifiscan", func(w http.ResponseWriter, r *http.Request) {
 				assert.Equal(t, "GET", r.Method)
 				fmt.Fprint(w, fixture(tc.fixture))
 			})
-			resp, err := client.ShellyService.GetWifiScan()
+			resp, err := cl.GetWifiScan()
 			if tc.wantError {
 				assert.Error(t, err)
 				assert.Nil(t, resp)
@@ -266,6 +336,14 @@ func TestGetWifiScan(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TesGetWifiScanCheckNewRequestFailure(t *testing.T) {
+	client := mocks.NewShellyClient(t)
+	client.On("NewRequest", mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("testing"))
+	cl := NewShellyService(client)
+	_, err := cl.GetWifiScan()
+	assert.Error(t, err)
 }
 
 func fixture(path string) string {

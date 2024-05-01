@@ -10,3 +10,12 @@ packages:
   github.com/rubemlrm/go-shelly/shelly/gen1:
     config:
       all: True
+  github.com/rubemlrm/go-shelly/shelly/gen1/devices:
+    config:
+      all: True
+  github.com/rubemlrm/go-shelly/shelly/gen1/transport:
+    config:
+      all: True
+  github.com/rubemlrm/go-shelly/shelly/gen1/contracts:
+    config:
+      all: True
