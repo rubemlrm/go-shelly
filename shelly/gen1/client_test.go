@@ -8,11 +8,12 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
 
-	client_mocks "github.com/rubemlrm/go-shelly/shelly/gen1/mocks"
+	mocks "github.com/rubemlrm/go-shelly/shelly/gen1/mocks"
 	"github.com/stretchr/testify/mock"
 
 	"github.com/go-faker/faker/v4"
@@ -49,8 +50,8 @@ func setup(t *testing.T) (*http.ServeMux, *Client) {
 	server := httptest.NewServer(mux)
 	t.Cleanup(server.Close)
 
-	// client is the Gitlab client being tested.
-	client, err := NewClient("http://localhost")
+	// client is the client being tested.
+	client, err := NewClient(server.URL)
 	if err != nil {
 		t.Fatalf("Failed to create client: %v", err)
 	}
@@ -233,6 +234,11 @@ func TestRetryHTTPCheck(t *testing.T) {
 }
 
 func TestNewRequest(t *testing.T) {
+
+	type opts struct {
+		param string `url:"param"`
+	}
+
 	type test struct {
 		title     string
 		method    string
@@ -241,9 +247,10 @@ func TestNewRequest(t *testing.T) {
 		wantError bool
 		hasAuth   bool
 		error     error
-		request   *retryablehttp.Request
+		opts      *opts
 	}
-
+	url, err := url.Parse("http://localhost")
+	assert.NoError(t, err)
 	tests := []test{
 		{
 			title:    "Request created with success",
@@ -253,37 +260,60 @@ func TestNewRequest(t *testing.T) {
 				username: "",
 				password: faker.Password(),
 				client:   &retryablehttp.Client{},
+				BaseURL:  url,
 			},
 			wantError: false,
 			error:     nil,
 			hasAuth:   false,
 		},
+
 		{
 			title:    "Request with auth created with success",
 			method:   http.MethodPost,
 			endpoint: "/random",
 			client: &Client{
-				username: faker.Username(),
-				password: faker.Password(),
-				client:   &retryablehttp.Client{},
+				username:    faker.Username(),
+				password:    faker.Password(),
+				client:      &retryablehttp.Client{},
+				BaseURL:     url,
+				requireAuth: true,
 			},
 			wantError: false,
 			error:     nil,
 			hasAuth:   true,
 		},
+		{
+			title:    "Request created with url parameters and with success",
+			method:   http.MethodGet,
+			endpoint: "/random",
+			client: &Client{
+				username: "",
+				password: faker.Password(),
+				client:   &retryablehttp.Client{},
+				BaseURL:  url,
+			},
+			wantError: false,
+			error:     nil,
+			hasAuth:   false,
+			opts: &opts{
+				param: "testing",
+			},
+		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.title, func(t *testing.T) {
-			req, err := tc.client.NewRequest(tc.method, tc.endpoint)
+			req, err := tc.client.NewRequest(tc.method, tc.endpoint, tc.opts)
 			assert.NoError(t, err)
 			assert.NotNil(t, req)
-			assert.Equal(t, http.MethodPost, req.Request.Method)
-			assert.Equal(t, []string{"application/json"}, req.Request.Header["Content-Type"])
+			assert.Equal(t, tc.method, req.Request.Method)
+			assert.Equal(t, []string{"application/json"}, req.Request.Header["Accept"])
+			if tc.opts != nil {
+				assert.Contains(t, "testing", req.Request.URL)
+			}
 			if tc.hasAuth {
 				assert.NotNil(t, req.Request.Header["Authorization"])
 			}
-
 		})
 	}
 }
@@ -340,12 +370,10 @@ func TestSetBasicAuth(t *testing.T) {
 				assert.NoError(t, err)
 			}
 		})
-
 	}
 }
 
 func TestDo(t *testing.T) {
-
 	type mockClientReturn struct {
 		response *http.Response
 		error    error
@@ -396,6 +424,18 @@ func TestDo(t *testing.T) {
 			wantError: true,
 		},
 		{
+			title: "Test response status error code",
+			client: &Client{
+				username: faker.Username(),
+				password: faker.Password(),
+			},
+			mockClientReturn: mockClientReturn{
+				response: &http.Response{StatusCode: http.StatusUnauthorized},
+				error:    nil,
+			},
+			wantError: true,
+		},
+		{
 			title: "Test Failed response decode",
 			client: &Client{
 				username: "",
@@ -429,7 +469,7 @@ func TestDo(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.title, func(t *testing.T) {
-			mockClient := client_mocks.NewMockClientProxy(t)
+			mockClient := mocks.NewClientProxy(t)
 			mockClient.On("Do", mock.Anything).Return(tc.mockClientReturn.response, tc.mockClientReturn.error)
 			tc.client.client = mockClient
 			req := &retryablehttp.Request{}

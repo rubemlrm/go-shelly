@@ -11,8 +11,8 @@ import (
 	"slices"
 	"time"
 
+	"github.com/google/go-querystring/query"
 	"github.com/hashicorp/go-cleanhttp"
-
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
 )
 
@@ -24,15 +24,10 @@ type ClientProxy interface {
 type Client struct {
 	BaseURL       *url.URL
 	client        ClientProxy
-	common        service
 	username      string
 	password      string
 	requireAuth   bool
 	ShellyService *ShellyService
-}
-
-type service struct {
-	client *Client
 }
 
 type Response struct {
@@ -96,31 +91,75 @@ func (c *Client) retryHTTPCheck(ctx context.Context, resp *http.Response, err er
 	return false, nil
 }
 
-func (c *Client) NewRequest(method, endpoint string) (*retryablehttp.Request, error) {
-	composedURL := fmt.Sprintf("%v%v", c.BaseURL, endpoint)
-	reqHeaders := make(http.Header)
-	reqHeaders.Set("Accept", "application/json")
+func (c *Client) NewRequest(method, endpoint string, opts interface{}) (*retryablehttp.Request, error) {
 	jsonMethodsList := []string{
 		http.MethodPatch,
 		http.MethodPost,
 		http.MethodPut,
 	}
+	var body interface{}
 
-	if slices.Contains(jsonMethodsList, method) {
-		reqHeaders.Set("Content-Type", "application/json")
-	}
-
-	request, err := retryablehttp.NewRequest(method, composedURL, nil)
+	u, err := c.ParseUrl(method, endpoint, opts)
 	if err != nil {
 		return nil, err
 	}
-	if c.username != "" {
-		request.SetBasicAuth(c.username, c.password)
+
+	reqHeaders := make(http.Header)
+	reqHeaders.Set("Accept", "application/json")
+	if slices.Contains(jsonMethodsList, method) {
+		reqHeaders.Set("Content-Type", "application/json")
+		if opts != nil {
+			body, err = json.Marshal(opts)
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
-	for k, v := range reqHeaders {
+
+	request, err := retryablehttp.NewRequest(method, u, body)
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.SetAdditionalHeaders(request, reqHeaders)
+	if err != nil {
+		return nil, err
+	}
+
+	if c.requireAuth {
+		err = c.SetBasicAuth(request)
+	}
+
+	return request, nil
+}
+
+func (c *Client) ParseUrl(method, endpoint string, opts interface{}) (string, error) {
+	u := *c.BaseURL
+	unescaped, err := url.PathUnescape(endpoint)
+	if err != nil {
+		return "", err
+	}
+
+	// Set the encoded path data
+	u.RawPath = c.BaseURL.Path + endpoint
+	u.Path = c.BaseURL.Path + unescaped
+
+	if method == http.MethodGet && opts != nil {
+		q, err := query.Values(opts)
+		if err != nil {
+			return "", err
+		}
+		u.RawQuery = q.Encode()
+	}
+
+	return u.String(), nil
+}
+
+func (c *Client) SetAdditionalHeaders(request *retryablehttp.Request, headers http.Header) error {
+	for k, v := range headers {
 		request.Header[k] = v
 	}
-	return request, nil
+	return nil
 }
 
 func (c *Client) SetBasicAuth(request *retryablehttp.Request) error {
@@ -136,20 +175,25 @@ func (c *Client) SetBasicAuth(request *retryablehttp.Request) error {
 
 func (c *Client) Do(req *retryablehttp.Request, v interface{}) (*Response, error) {
 	resp, err := c.client.Do(req)
-
 	if err != nil {
 		return nil, err
 	}
-	if resp.StatusCode == http.StatusInternalServerError {
-		return nil, errors.New("server error")
-	}
 
-	if resp.StatusCode == http.StatusUnauthorized {
+	switch os := resp.StatusCode; os {
+	case http.StatusInternalServerError:
+		return nil, errors.New("server error")
+	case http.StatusUnauthorized:
 		return nil, errors.New("unauthorized to access this resource")
 	}
 
-	defer resp.Body.Close()
-	defer io.Copy(io.Discard, resp.Body)
+	defer func() {
+		err = resp.Body.Close()
+	}()
+
+	defer func() {
+		_, err = io.Copy(io.Discard, resp.Body)
+	}()
+
 	parsedResponse := &Response{Response: resp}
 	err = json.NewDecoder(resp.Body).Decode(v)
 	if err == io.EOF {

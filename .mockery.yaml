@@ -1,9 +1,12 @@
-with-expecter: True
+quiet: False
+keeptree: False
+disable-version-string: True
+with-expecter: False
+mockname: '{{.InterfaceName}}'
+filename: '{{.MockName}}.go'
+dir: '{{.InterfaceDir}}/mocks/'
+outpkg: mocks
 packages:
-  github.com/rubemlrm/go-shelly/shelly:
+  github.com/rubemlrm/go-shelly/shelly/gen1:
     config:
       all: True
-      filename: "mock_{{.InterfaceName}}.go"
-      dir: "{{.InterfaceDir}}/mocks/"
-      mockname: "Mock{{.InterfaceName}}"
-      outpkg: "{{.PackageName}}_mocks"
