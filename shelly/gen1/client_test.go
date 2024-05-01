@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	mocks "github.com/rubemlrm/go-shelly/shelly/gen1/mocks"
+	"github.com/rubemlrm/go-shelly/shelly/gen1/mocks"
 	"github.com/stretchr/testify/mock"
 
 	"github.com/go-faker/faker/v4"
@@ -266,7 +266,6 @@ func TestNewRequest(t *testing.T) {
 			error:     nil,
 			hasAuth:   false,
 		},
-
 		{
 			title:    "Request with auth created with success",
 			method:   http.MethodPost,
