@@ -235,8 +235,8 @@ func TestRetryHTTPCheck(t *testing.T) {
 
 func TestNewRequest(t *testing.T) {
 
-	type opts struct {
-		param string `url:"param"`
+	type Opts struct {
+		Param string `url:"q"`
 	}
 
 	type test struct {
@@ -247,7 +247,7 @@ func TestNewRequest(t *testing.T) {
 		wantError bool
 		hasAuth   bool
 		error     error
-		opts      *opts
+		opts      *Opts
 	}
 	url, err := url.Parse("http://localhost")
 	assert.NoError(t, err)
@@ -295,9 +295,7 @@ func TestNewRequest(t *testing.T) {
 			wantError: false,
 			error:     nil,
 			hasAuth:   false,
-			opts: &opts{
-				param: "testing",
-			},
+			opts:      &Opts{"testing"},
 		},
 	}
 
@@ -309,7 +307,7 @@ func TestNewRequest(t *testing.T) {
 			assert.Equal(t, tc.method, req.Request.Method)
 			assert.Equal(t, []string{"application/json"}, req.Request.Header["Accept"])
 			if tc.opts != nil {
-				assert.Contains(t, "testing", req.Request.URL)
+				assert.Contains(t, req.Request.URL.RawQuery, "testing")
 			}
 			if tc.hasAuth {
 				assert.NotNil(t, req.Request.Header["Authorization"])
