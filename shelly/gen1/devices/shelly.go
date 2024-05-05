@@ -1,17 +1,20 @@
-package gen1
+package devices
 
 import (
 	"fmt"
 	"net/http"
 	"time"
+
+	contracts "github.com/rubemlrm/go-shelly/shelly/gen1/contracts"
 )
 
 type BaseShellyResponse struct {
-	Type   string `json:"type"`
-	Mac    string `json:"mac"`
-	Auth   bool   `json:"auth"`
-	Fw     string `json:"fw"`
-	LongId int    `json:"longid"`
+	Type         string `json:"type"`
+	Mac          string `json:"mac"`
+	Auth         bool   `json:"auth"`
+	Fw           string `json:"fw"`
+	LongId       int    `json:"longid"`
+	Discoverable bool   `json:"discoverable"`
 }
 
 type BaseSettingsResponse struct {
@@ -63,12 +66,14 @@ type BaseWifiSta struct {
 	Mask       any    `json:"mask,omitempty"`
 	DNS        any    `json:"dns,omitempty"`
 }
-type BaseWifiSta1 struct {
-}
-type BaseApRoaming struct {
-	Enabled   bool `json:"enabled,omitempty"`
-	Threshold int  `json:"threshold,omitempty"`
-}
+type (
+	BaseWifiSta1  struct{}
+	BaseApRoaming struct {
+		Enabled   bool `json:"enabled,omitempty"`
+		Threshold int  `json:"threshold,omitempty"`
+	}
+)
+
 type BaseMqtt struct {
 	Enable              bool    `json:"enable,omitempty"`
 	Server              string  `json:"server,omitempty"`
@@ -138,74 +143,80 @@ type BaseWifiScanResults struct {
 }
 
 type ShellyService struct {
-	client *Client
+	Client contracts.ShellyClient
 }
 
-func (s *ShellyService) GetShelly() (*BaseShellyResponse, error) {
-	req, err := s.client.NewRequest(http.MethodGet, "shelly")
+func NewShellyService(client contracts.ShellyClient) *ShellyService {
+	return &ShellyService{
+		Client: client,
+	}
+}
+
+func (s *ShellyService) GetShelly() (*BaseShellyResponse, *contracts.Response, error) {
+	req, err := s.Client.NewRequest(http.MethodGet, "/shelly", nil)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	var info BaseShellyResponse
-	_, err = s.client.Do(req, &info)
+	resp, err := s.Client.Do(req, &info)
 	if err != nil {
-		return nil, err
+		return nil, resp, err
 	}
-	return &info, nil
+	return &info, resp, nil
 }
 
-func (s *ShellyService) GetSettings() (*BaseSettingsResponse, error) {
-	req, err := s.client.NewRequest(http.MethodGet, "settings")
+func (s *ShellyService) GetSettings() (*BaseSettingsResponse, *contracts.Response, error) {
+	req, err := s.Client.NewRequest(http.MethodGet, "/settings", nil)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	var info BaseSettingsResponse
-	resp, err := s.client.Do(req, &info)
+	resp, err := s.Client.Do(req, &info)
 	if err != nil {
-		return nil, err
+		return nil, resp, err
 	}
 	fmt.Print(resp)
-	return &info, nil
+	return &info, resp, nil
 }
 
-func (s *ShellyService) GetOta() (*BaseOtaRequest, error) {
-	req, err := s.client.NewRequest(http.MethodGet, "ota")
+func (s *ShellyService) GetOta() (*BaseOtaResponse, *contracts.Response, error) {
+	req, err := s.Client.NewRequest(http.MethodGet, "/ota", nil)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	var info BaseOtaRequest
-	resp, err := s.client.Do(req, &info)
+	var info BaseOtaResponse
+	resp, err := s.Client.Do(req, &info)
 	if err != nil {
-		return nil, err
+		return nil, resp, err
 	}
 	fmt.Print(resp)
-	return &info, nil
+	return &info, resp, nil
 }
 
-func (s *ShellyService) GetOtaCheck() (*BaseOtaCheck, error) {
-	req, err := s.client.NewRequest(http.MethodGet, "ota")
+func (s *ShellyService) GetOtaCheck() (*BaseOtaCheck, *contracts.Response, error) {
+	req, err := s.Client.NewRequest(http.MethodGet, "/ota/check", nil)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	var info BaseOtaCheck
-	resp, err := s.client.Do(req, &info)
+	resp, err := s.Client.Do(req, &info)
 	if err != nil {
-		return nil, err
+		return nil, resp, err
 	}
 	fmt.Print(resp)
-	return &info, nil
+	return &info, resp, nil
 }
 
-func (s *ShellyService) GetWifiScan() (*BaseWifiScan, error) {
-	req, err := s.client.NewRequest(http.MethodGet, "wifiscan")
+func (s *ShellyService) GetWifiScan() (*BaseWifiScan, *contracts.Response, error) {
+	req, err := s.Client.NewRequest(http.MethodGet, "/wifiscan", nil)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	var info BaseWifiScan
-	resp, err := s.client.Do(req, &info)
+	resp, err := s.Client.Do(req, &info)
 	if err != nil {
-		return nil, err
+		return nil, resp, err
 	}
 	fmt.Print(resp)
-	return &info, nil
+	return &info, resp, nil
 }
