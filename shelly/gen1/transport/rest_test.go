@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"net/url"
 	"strings"
@@ -225,7 +226,7 @@ func TestNewRequest(t *testing.T) {
 		wantError bool
 		hasAuth   bool
 		error     error
-		opts      *Opts
+		opts      interface{}
 	}
 	url, err := url.Parse("http://localhost")
 	assert.NoError(t, err)
@@ -277,32 +278,81 @@ func TestNewRequest(t *testing.T) {
 		{
 			title:    "Fail because of url parsing",
 			method:   http.MethodGet,
-			endpoint: "/random",
+			endpoint: "/%%xpto",
 			client: &Client{
 				username: "",
 				password: faker.Password(),
 				client:   &retryablehttp.Client{},
 				baseURL:  url,
 			},
-			wantError: false,
+			wantError: true,
 			error:     nil,
 			hasAuth:   false,
 			opts:      &Opts{"testing"},
+		},
+		{
+			title:    "Fail because of missing authentication parsing",
+			method:   http.MethodGet,
+			endpoint: "/test",
+			client: &Client{
+				username:     "",
+				password:     faker.Password(),
+				client:       &retryablehttp.Client{},
+				baseURL:      url,
+				requiresAuth: true,
+			},
+			wantError: true,
+			error:     nil,
+			hasAuth:   true,
+		},
+		{
+			title:    "Fail because of query string parsing",
+			method:   http.MethodGet,
+			endpoint: "/test",
+			client: &Client{
+				username: "",
+				password: faker.Password(),
+				client:   &retryablehttp.Client{},
+				baseURL:  url,
+			},
+			wantError: true,
+			error:     nil,
+			hasAuth:   false,
+			opts:      "",
+		},
+		{
+			title:    "Fail because of body parsing",
+			method:   http.MethodPost,
+			endpoint: "/test",
+			client: &Client{
+				username: "",
+				password: faker.Password(),
+				client:   &retryablehttp.Client{},
+				baseURL:  url,
+			},
+			wantError: true,
+			error:     nil,
+			hasAuth:   false,
+			opts:      math.Inf(1),
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.title, func(t *testing.T) {
 			req, err := tc.client.NewRequest(tc.method, tc.endpoint, tc.opts)
-			assert.NoError(t, err)
-			assert.NotNil(t, req)
-			assert.Equal(t, tc.method, req.Request.Method)
-			assert.Equal(t, []string{"application/json"}, req.Request.Header["Accept"])
-			if tc.opts != nil {
-				assert.Contains(t, req.Request.URL.RawQuery, "testing")
-			}
-			if tc.hasAuth {
-				assert.NotNil(t, req.Request.Header["Authorization"])
+			if tc.wantError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, req)
+				assert.Equal(t, tc.method, req.Request.Method)
+				assert.Equal(t, []string{"application/json"}, req.Request.Header["Accept"])
+				if tc.opts != nil {
+					assert.Contains(t, req.Request.URL.RawQuery, "testing")
+				}
+				if tc.hasAuth {
+					assert.NotNil(t, req.Request.Header["Authorization"])
+				}
 			}
 		})
 	}

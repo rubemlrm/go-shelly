@@ -84,7 +84,7 @@ func TestGetShelly(t *testing.T) {
 			})
 
 			cl := NewShellyService(client)
-			resp, err := cl.GetShelly()
+			resp, _, err := cl.GetShelly()
 			if tc.wantError {
 				assert.Error(t, err)
 				assert.Nil(t, resp)
@@ -100,7 +100,7 @@ func TestNewRequestFailure(t *testing.T) {
 	client := mocks.NewShellyClient(t)
 	client.On("NewRequest", mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("testing"))
 	cl := NewShellyService(client)
-	_, err := cl.GetShelly()
+	_, _, err := cl.GetShelly()
 	assert.Error(t, err)
 
 }
@@ -144,7 +144,7 @@ func TestGetSettings(t *testing.T) {
 				assert.Equal(t, "GET", r.Method)
 				fmt.Fprint(w, fixture(tc.fixture))
 			})
-			resp, err := cl.GetSettings()
+			resp, _, err := cl.GetSettings()
 			if tc.wantError {
 				assert.Error(t, err)
 				assert.Nil(t, resp)
@@ -160,7 +160,7 @@ func TestGetSettingsNewRequestFailure(t *testing.T) {
 	client := mocks.NewShellyClient(t)
 	client.On("NewRequest", mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("testing"))
 	cl := NewShellyService(client)
-	_, err := cl.GetSettings()
+	_, _, err := cl.GetSettings()
 	assert.Error(t, err)
 
 }
@@ -207,7 +207,7 @@ func TestGetOta(t *testing.T) {
 				assert.Equal(t, "GET", r.Method)
 				fmt.Fprint(w, fixture(tc.fixture))
 			})
-			resp, err := cl.GetOta()
+			resp, _, err := cl.GetOta()
 			if tc.wantError {
 				assert.Error(t, err)
 				assert.Nil(t, resp)
@@ -223,7 +223,7 @@ func TestGetOtaNewRequestFailure(t *testing.T) {
 	client := mocks.NewShellyClient(t)
 	client.On("NewRequest", mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("testing"))
 	cl := NewShellyService(client)
-	_, err := cl.GetOta()
+	_, _, err := cl.GetOta()
 	assert.Error(t, err)
 }
 
@@ -266,7 +266,7 @@ func TestGetOtaCheck(t *testing.T) {
 				assert.Equal(t, "GET", r.Method)
 				fmt.Fprint(w, fixture(tc.fixture))
 			})
-			resp, err := cl.GetOtaCheck()
+			resp, _, err := cl.GetOtaCheck()
 			if tc.wantError {
 				assert.Error(t, err)
 				assert.Nil(t, resp)
@@ -282,7 +282,7 @@ func TestGetOtaCheckNewRequestFailure(t *testing.T) {
 	client := mocks.NewShellyClient(t)
 	client.On("NewRequest", mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("testing"))
 	cl := NewShellyService(client)
-	_, err := cl.GetOtaCheck()
+	_, _, err := cl.GetOtaCheck()
 	assert.Error(t, err)
 }
 
@@ -326,7 +326,7 @@ func TestGetWifiScan(t *testing.T) {
 				assert.Equal(t, "GET", r.Method)
 				fmt.Fprint(w, fixture(tc.fixture))
 			})
-			resp, err := cl.GetWifiScan()
+			resp, _, err := cl.GetWifiScan()
 			if tc.wantError {
 				assert.Error(t, err)
 				assert.Nil(t, resp)
@@ -342,7 +342,7 @@ func TesGetWifiScanCheckNewRequestFailure(t *testing.T) {
 	client := mocks.NewShellyClient(t)
 	client.On("NewRequest", mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("testing"))
 	cl := NewShellyService(client)
-	_, err := cl.GetWifiScan()
+	_, _, err := cl.GetWifiScan()
 	assert.Error(t, err)
 }
 

@@ -34,7 +34,6 @@ type Client struct {
 	client       ClientProxy
 	password     string
 	username     string
-	baseUrl      string
 	requiresAuth bool
 	baseURL      *url.URL
 }
@@ -124,13 +123,13 @@ func (c *Client) NewRequest(method, endpoint string, opts interface{}) (*retryab
 		return nil, err
 	}
 
-	err = c.SetAdditionalHeaders(request, reqHeaders)
-	if err != nil {
-		return nil, err
-	}
+	c.SetAdditionalHeaders(request, reqHeaders)
 
 	if c.requiresAuth {
 		err = c.SetBasicAuth(request)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return request, nil
@@ -158,11 +157,10 @@ func (c *Client) ParseUrl(method, endpoint string, opts interface{}) (string, er
 	return u.String(), nil
 }
 
-func (c *Client) SetAdditionalHeaders(request *retryablehttp.Request, headers http.Header) error {
+func (c *Client) SetAdditionalHeaders(request *retryablehttp.Request, headers http.Header) {
 	for k, v := range headers {
 		request.Header[k] = v
 	}
-	return nil
 }
 
 func (c *Client) SetBasicAuth(request *retryablehttp.Request) error {
@@ -176,7 +174,7 @@ func (c *Client) SetBasicAuth(request *retryablehttp.Request) error {
 	return nil
 }
 
-func (c *Client) Do(req *retryablehttp.Request, v interface{}) (*http.Response, error) {
+func (c *Client) Do(req *retryablehttp.Request, v interface{}) (*contracts.Response, error) {
 	resp, err := c.client.Do(req)
 	if err != nil {
 		return nil, err
@@ -205,5 +203,5 @@ func (c *Client) Do(req *retryablehttp.Request, v interface{}) (*http.Response, 
 		return nil, err
 	}
 
-	return resp, nil
+	return &contracts.Response{Response: resp}, nil
 }

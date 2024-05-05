@@ -18,24 +18,24 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	req, err := client.ShellyService.GetSettings()
+	req, _, err := client.ShellyService.GetSettings()
 	if err != nil {
 		panic(err)
 	}
 	fmt.Printf("%+v\n", req)
-	req2, err := client.ShellyService.GetOta()
+	req2, _, err := client.ShellyService.GetOta()
 	if err != nil {
 		panic(err)
 	}
 	fmt.Printf("%+v\n", req2)
 
-	req3, err := client.ShellyService.GetOtaCheck()
+	req3, _, err := client.ShellyService.GetOtaCheck()
 	if err != nil {
 		panic(err)
 	}
 	fmt.Printf("%+v\n", req3)
 
-	req4, err := client.ShellyService.GetWifiScan()
+	req4, _, err := client.ShellyService.GetWifiScan()
 	if err != nil {
 		panic(err)
 	}

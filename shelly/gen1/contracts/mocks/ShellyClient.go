@@ -4,8 +4,9 @@ package mocks
 
 import (
 	context "context"
-
 	http "net/http"
+
+	contracts "github.com/rubemlrm/go-shelly/shelly/gen1/contracts"
 
 	mock "github.com/stretchr/testify/mock"
 
@@ -18,19 +19,19 @@ type ShellyClient struct {
 }
 
 // Do provides a mock function with given fields: req, v
-func (_m *ShellyClient) Do(req *retryablehttp.Request, v interface{}) (*http.Response, error) {
+func (_m *ShellyClient) Do(req *retryablehttp.Request, v interface{}) (*contracts.Response, error) {
 	ret := _m.Called(req, v)
 
-	var r0 *http.Response
+	var r0 *contracts.Response
 	var r1 error
-	if rf, ok := ret.Get(0).(func(*retryablehttp.Request, interface{}) (*http.Response, error)); ok {
+	if rf, ok := ret.Get(0).(func(*retryablehttp.Request, interface{}) (*contracts.Response, error)); ok {
 		return rf(req, v)
 	}
-	if rf, ok := ret.Get(0).(func(*retryablehttp.Request, interface{}) *http.Response); ok {
+	if rf, ok := ret.Get(0).(func(*retryablehttp.Request, interface{}) *contracts.Response); ok {
 		r0 = rf(req, v)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*http.Response)
+			r0 = ret.Get(0).(*contracts.Response)
 		}
 	}
 
@@ -118,17 +119,8 @@ func (_m *ShellyClient) RetryHTTPCheck(ctx context.Context, resp *http.Response,
 }
 
 // SetAdditionalHeaders provides a mock function with given fields: request, headers
-func (_m *ShellyClient) SetAdditionalHeaders(request *retryablehttp.Request, headers http.Header) error {
-	ret := _m.Called(request, headers)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(*retryablehttp.Request, http.Header) error); ok {
-		r0 = rf(request, headers)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
+func (_m *ShellyClient) SetAdditionalHeaders(request *retryablehttp.Request, headers http.Header) {
+	_m.Called(request, headers)
 }
 
 // SetBasicAuth provides a mock function with given fields: request
