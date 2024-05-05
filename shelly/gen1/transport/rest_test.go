@@ -73,7 +73,7 @@ func TestNewClient(t *testing.T) {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tc.input.Hostname, c.baseURL.String())
+				assert.Equal(t, tc.input.Hostname, c.BaseURL.String())
 			}
 		})
 	}
@@ -113,7 +113,7 @@ func TestNewBasicAuthClient(t *testing.T) {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tc.input.Hostname, c.baseURL.String())
+				assert.Equal(t, tc.input.Hostname, c.BaseURL.String())
 			}
 		})
 	}
@@ -134,8 +134,8 @@ func TestRetryHTTPCheck(t *testing.T) {
 		{
 			title: "Context Error found",
 			input: &Client{
-				username: "",
-				password: faker.Password(),
+				Username: "",
+				Password: faker.Password(),
 				client:   &retryablehttp.Client{},
 			},
 			wantError:        true,
@@ -148,8 +148,8 @@ func TestRetryHTTPCheck(t *testing.T) {
 		{
 			title: "Error passed to method",
 			input: &Client{
-				username: "",
-				password: faker.Password(),
+				Username: "",
+				Password: faker.Password(),
 				client:   &retryablehttp.Client{},
 			},
 			wantError:        true,
@@ -162,8 +162,8 @@ func TestRetryHTTPCheck(t *testing.T) {
 		{
 			title: "HTTP response retrieves a 5xx error",
 			input: &Client{
-				username: "",
-				password: faker.Password(),
+				Username: "",
+				Password: faker.Password(),
 				client:   &retryablehttp.Client{},
 			},
 			wantError:    false,
@@ -178,8 +178,8 @@ func TestRetryHTTPCheck(t *testing.T) {
 		{
 			title: "HTTP response retrieves a 200 code",
 			input: &Client{
-				username: "",
-				password: faker.Password(),
+				Username: "",
+				Password: faker.Password(),
 				client:   &retryablehttp.Client{},
 			},
 			wantError:    false,
@@ -236,10 +236,10 @@ func TestNewRequest(t *testing.T) {
 			method:   http.MethodPost,
 			endpoint: "/random",
 			client: &Client{
-				username: "",
-				password: faker.Password(),
+				Username: "",
+				Password: faker.Password(),
 				client:   &retryablehttp.Client{},
-				baseURL:  url,
+				BaseURL:  url,
 			},
 			wantError: false,
 			error:     nil,
@@ -250,11 +250,11 @@ func TestNewRequest(t *testing.T) {
 			method:   http.MethodPost,
 			endpoint: "/random",
 			client: &Client{
-				username:     faker.Username(),
-				password:     faker.Password(),
+				Username:     faker.Username(),
+				Password:     faker.Password(),
 				client:       &retryablehttp.Client{},
-				baseURL:      url,
-				requiresAuth: true,
+				BaseURL:      url,
+				RequiresAuth: true,
 			},
 			wantError: false,
 			error:     nil,
@@ -265,10 +265,10 @@ func TestNewRequest(t *testing.T) {
 			method:   http.MethodGet,
 			endpoint: "/random",
 			client: &Client{
-				username: "",
-				password: faker.Password(),
+				Username: "",
+				Password: faker.Password(),
 				client:   &retryablehttp.Client{},
-				baseURL:  url,
+				BaseURL:  url,
 			},
 			wantError: false,
 			error:     nil,
@@ -280,10 +280,10 @@ func TestNewRequest(t *testing.T) {
 			method:   http.MethodGet,
 			endpoint: "/%%xpto",
 			client: &Client{
-				username: "",
-				password: faker.Password(),
+				Username: "",
+				Password: faker.Password(),
 				client:   &retryablehttp.Client{},
-				baseURL:  url,
+				BaseURL:  url,
 			},
 			wantError: true,
 			error:     nil,
@@ -295,11 +295,11 @@ func TestNewRequest(t *testing.T) {
 			method:   http.MethodGet,
 			endpoint: "/test",
 			client: &Client{
-				username:     "",
-				password:     faker.Password(),
+				Username:     "",
+				Password:     faker.Password(),
 				client:       &retryablehttp.Client{},
-				baseURL:      url,
-				requiresAuth: true,
+				BaseURL:      url,
+				RequiresAuth: true,
 			},
 			wantError: true,
 			error:     nil,
@@ -310,10 +310,10 @@ func TestNewRequest(t *testing.T) {
 			method:   http.MethodGet,
 			endpoint: "/test",
 			client: &Client{
-				username: "",
-				password: faker.Password(),
+				Username: "",
+				Password: faker.Password(),
 				client:   &retryablehttp.Client{},
-				baseURL:  url,
+				BaseURL:  url,
 			},
 			wantError: true,
 			error:     nil,
@@ -325,10 +325,10 @@ func TestNewRequest(t *testing.T) {
 			method:   http.MethodPost,
 			endpoint: "/test",
 			client: &Client{
-				username: "",
-				password: faker.Password(),
+				Username: "",
+				Password: faker.Password(),
 				client:   &retryablehttp.Client{},
-				baseURL:  url,
+				BaseURL:  url,
 			},
 			wantError: true,
 			error:     nil,
@@ -370,8 +370,8 @@ func TestSetBasicAuth(t *testing.T) {
 		{
 			title: "Username can't be empty",
 			input: &Client{
-				username: "",
-				password: faker.Password(),
+				Username: "",
+				Password: faker.Password(),
 				client:   &retryablehttp.Client{},
 			},
 			wantError:    true,
@@ -380,8 +380,8 @@ func TestSetBasicAuth(t *testing.T) {
 		{
 			title: "Password can't be empty",
 			input: &Client{
-				username: faker.Username(),
-				password: "",
+				Username: faker.Username(),
+				Password: "",
 				client:   &retryablehttp.Client{},
 			},
 			wantError:    true,
@@ -390,8 +390,8 @@ func TestSetBasicAuth(t *testing.T) {
 		{
 			title: "Auth set with success",
 			input: &Client{
-				username: faker.Username(),
-				password: faker.Password(),
+				Username: faker.Username(),
+				Password: faker.Password(),
 				client:   &retryablehttp.Client{},
 			},
 			wantError:    false,
@@ -442,8 +442,8 @@ func TestDo(t *testing.T) {
 		{
 			title: "Test response error",
 			client: &Client{
-				username: "",
-				password: faker.Password(),
+				Username: "",
+				Password: faker.Password(),
 			},
 			mockClientReturn: mockClientReturn{
 				response: nil,
@@ -454,8 +454,8 @@ func TestDo(t *testing.T) {
 		{
 			title: "Test response status error code",
 			client: &Client{
-				username: "",
-				password: faker.Password(),
+				Username: "",
+				Password: faker.Password(),
 			},
 			mockClientReturn: mockClientReturn{
 				response: &http.Response{StatusCode: http.StatusInternalServerError},
@@ -466,8 +466,8 @@ func TestDo(t *testing.T) {
 		{
 			title: "Test response status error code",
 			client: &Client{
-				username: faker.Username(),
-				password: faker.Password(),
+				Username: faker.Username(),
+				Password: faker.Password(),
 			},
 			mockClientReturn: mockClientReturn{
 				response: &http.Response{StatusCode: http.StatusUnauthorized},
@@ -478,8 +478,8 @@ func TestDo(t *testing.T) {
 		{
 			title: "Test Failed response decode",
 			client: &Client{
-				username: "",
-				password: faker.Password(),
+				Username: "",
+				Password: faker.Password(),
 			},
 			mockClientReturn: mockClientReturn{
 				response: &http.Response{
@@ -493,8 +493,8 @@ func TestDo(t *testing.T) {
 		{
 			title: "Test Response output",
 			client: &Client{
-				username: "",
-				password: faker.Password(),
+				Username: "",
+				Password: faker.Password(),
 			},
 			mockClientReturn: mockClientReturn{
 				response: &http.Response{

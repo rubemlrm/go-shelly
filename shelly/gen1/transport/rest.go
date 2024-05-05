@@ -32,10 +32,10 @@ type ClientOptions struct {
 // Client act's as the entry object for sdk
 type Client struct {
 	client       ClientProxy
-	password     string
-	username     string
-	requiresAuth bool
-	baseURL      *url.URL
+	Password     string
+	Username     string
+	RequiresAuth bool
+	BaseURL      *url.URL
 }
 
 // NewClient creates a new http client instance in case the provided one is nil
@@ -54,9 +54,9 @@ func NewRestBasicAuthClient(opts ClientOptions) (*Client, error) {
 		return nil, err
 	}
 
-	client.username = opts.Username
-	client.password = opts.Password
-	client.requiresAuth = true
+	client.Username = opts.Username
+	client.Password = opts.Password
+	client.RequiresAuth = true
 	return client, nil
 }
 
@@ -67,7 +67,7 @@ func newClient(hostname string) (*Client, error) {
 	}
 
 	c := &Client{}
-	c.baseURL = baseURL
+	c.BaseURL = baseURL
 	// Configure the HTTP client.
 	c.client = &retryablehttp.Client{
 		ErrorHandler: retryablehttp.PassthroughErrorHandler,
@@ -125,7 +125,7 @@ func (c *Client) NewRequest(method, endpoint string, opts interface{}) (*retryab
 
 	c.SetAdditionalHeaders(request, reqHeaders)
 
-	if c.requiresAuth {
+	if c.RequiresAuth {
 		err = c.SetBasicAuth(request)
 		if err != nil {
 			return nil, err
@@ -136,15 +136,15 @@ func (c *Client) NewRequest(method, endpoint string, opts interface{}) (*retryab
 }
 
 func (c *Client) ParseUrl(method, endpoint string, opts interface{}) (string, error) {
-	u := *c.baseURL
+	u := *c.BaseURL
 	unescaped, err := url.PathUnescape(endpoint)
 	if err != nil {
 		return "", err
 	}
 
 	// Set the encoded path data
-	u.RawPath = c.baseURL.Path + endpoint
-	u.Path = c.baseURL.Path + unescaped
+	u.RawPath = c.BaseURL.Path + endpoint
+	u.Path = c.BaseURL.Path + unescaped
 
 	if method == http.MethodGet && opts != nil {
 		q, err := query.Values(opts)
@@ -164,13 +164,13 @@ func (c *Client) SetAdditionalHeaders(request *retryablehttp.Request, headers ht
 }
 
 func (c *Client) SetBasicAuth(request *retryablehttp.Request) error {
-	if c.username == "" {
+	if c.Username == "" {
 		return fmt.Errorf("username can't be empty")
 	}
-	if c.password == "" {
+	if c.Password == "" {
 		return fmt.Errorf("password can't be empty")
 	}
-	request.SetBasicAuth(c.username, c.password)
+	request.SetBasicAuth(c.Username, c.Password)
 	return nil
 }
 

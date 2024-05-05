@@ -143,22 +143,22 @@ type BaseWifiScanResults struct {
 }
 
 type ShellyService struct {
-	client contracts.ShellyClient
+	Client contracts.ShellyClient
 }
 
 func NewShellyService(client contracts.ShellyClient) *ShellyService {
 	return &ShellyService{
-		client: client,
+		Client: client,
 	}
 }
 
 func (s *ShellyService) GetShelly() (*BaseShellyResponse, *contracts.Response, error) {
-	req, err := s.client.NewRequest(http.MethodGet, "/shelly", nil)
+	req, err := s.Client.NewRequest(http.MethodGet, "/shelly", nil)
 	if err != nil {
 		return nil, nil, err
 	}
 	var info BaseShellyResponse
-	resp, err := s.client.Do(req, &info)
+	resp, err := s.Client.Do(req, &info)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -166,12 +166,12 @@ func (s *ShellyService) GetShelly() (*BaseShellyResponse, *contracts.Response, e
 }
 
 func (s *ShellyService) GetSettings() (*BaseSettingsResponse, *contracts.Response, error) {
-	req, err := s.client.NewRequest(http.MethodGet, "/settings", nil)
+	req, err := s.Client.NewRequest(http.MethodGet, "/settings", nil)
 	if err != nil {
 		return nil, nil, err
 	}
 	var info BaseSettingsResponse
-	resp, err := s.client.Do(req, &info)
+	resp, err := s.Client.Do(req, &info)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -180,12 +180,12 @@ func (s *ShellyService) GetSettings() (*BaseSettingsResponse, *contracts.Respons
 }
 
 func (s *ShellyService) GetOta() (*BaseOtaResponse, *contracts.Response, error) {
-	req, err := s.client.NewRequest(http.MethodGet, "/ota", nil)
+	req, err := s.Client.NewRequest(http.MethodGet, "/ota", nil)
 	if err != nil {
 		return nil, nil, err
 	}
 	var info BaseOtaResponse
-	resp, err := s.client.Do(req, &info)
+	resp, err := s.Client.Do(req, &info)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -194,12 +194,12 @@ func (s *ShellyService) GetOta() (*BaseOtaResponse, *contracts.Response, error) 
 }
 
 func (s *ShellyService) GetOtaCheck() (*BaseOtaCheck, *contracts.Response, error) {
-	req, err := s.client.NewRequest(http.MethodGet, "/ota/check", nil)
+	req, err := s.Client.NewRequest(http.MethodGet, "/ota/check", nil)
 	if err != nil {
 		return nil, nil, err
 	}
 	var info BaseOtaCheck
-	resp, err := s.client.Do(req, &info)
+	resp, err := s.Client.Do(req, &info)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -208,12 +208,12 @@ func (s *ShellyService) GetOtaCheck() (*BaseOtaCheck, *contracts.Response, error
 }
 
 func (s *ShellyService) GetWifiScan() (*BaseWifiScan, *contracts.Response, error) {
-	req, err := s.client.NewRequest(http.MethodGet, "/wifiscan", nil)
+	req, err := s.Client.NewRequest(http.MethodGet, "/wifiscan", nil)
 	if err != nil {
 		return nil, nil, err
 	}
 	var info BaseWifiScan
-	resp, err := s.client.Do(req, &info)
+	resp, err := s.Client.Do(req, &info)
 	if err != nil {
 		return nil, resp, err
 	}
